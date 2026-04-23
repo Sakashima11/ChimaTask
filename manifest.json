@@ -9,15 +9,15 @@
     {
       "src": "https://lh3.googleusercontent.com/d/1otw9OGWSHiXiVdS1DaHOFcM_lCtj-_hj",
       "sizes": "192x192",
-      "type": "https://lh3.googleusercontent.com/d/1otw9OGWSHiXiVdS1DaHOFcM_lCtj-_hj"
+      "type": ""
     },
     {
-      "src": "icon-512.png",
+      "src": "512icon.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "icon-512.png",
+      "src": "512icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
