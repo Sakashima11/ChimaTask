@@ -1,0 +1,15 @@
+{
+  "name": "ちまタスク",
+  "short_name": "ちまタスク",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FDFCF8",
+  "icons": [
+    {
+      "src": "https://lh3.googleusercontent.com/d/1otw9OGWSHiXiVdS1DaHOFcM_lCtj-_hj",
+      "sizes": "192x192",
+      "type": "https://lh3.googleusercontent.com/d/1otw9OGWSHiXiVdS1DaHOFcM_lCtj-_hj"
+    }
+  ]
+}

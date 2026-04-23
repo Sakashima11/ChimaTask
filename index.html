@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ちまタスク</title>
+    
+    <!-- PWA用の最新設定：これで警告を消してインストール可能にするぜ -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#FDFCF8">
+    
+    <!-- manifestをインラインで：GitHubでもPWAとして認識させるぜ -->
+    <link rel="manifest.json">
+
+    <!-- 必要なライブラリ：すべて最新かつCDNで読み込むぜ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="bg-[#FDFCF8]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Reactから必要なフックと生成関数を取り出すぜ
+        const { useState, useEffect, createElement } = React;
+
+const Icon = ({ name, size = 20, className = "" }) => {
+    // 共通の属性（サイズ、色、CSSクラス）を定義するぜ
+    const props = {
+        width: size,
+        height: size,
+        className: className,
+        // 色を外側（Tailwind）から制御できるように currentColor にする
+        stroke: "currentColor", 
+        fill: "none", // 基本は線画、塗りつぶしたい場合は fill="currentColor" に変える
+        strokeWidth: 2,
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        viewBox: "0 0 24 24", // 24x24のキャンバスで描くのが標準だぜ
+        xmlns: "http://www.w3.org/1999/xlink"
+    };
+
+    // 名前によって、相棒が描いたSVGの「中身（path）」を切り替えるぜ
+    switch (name) {
+        case 'Play': // 開始ボタン
+            return (
+                <svg {...props}>
+                    {/* ここに相棒が描いたパスを記述だ！例として三角を描いておくぜ */}
+                    <path d="M5 3l14 9-14 9V3z" />
+                </svg>
+            );
+        case 'Trash2': // 削除ボタン
+            return (
+                <svg {...props}>
+                    {/* ここにゴミ箱のパスを記述だ！ */}
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+            );
+        case 'Bell': // ベルボタン
+            return (
+                <svg {...props}>
+                    {/* ここにベルのパスを記述だ！ */}
+                    <g transform="translate(3, 3)"> 
+                {name === 'Bell' && (
+                    <path d="M9,18.3c-.9,0-1.7-.4-2.1-1.2-2.4,0-6.3-.5-6.9-2.3-.3-.9.3-1.8,1.7-2.9h0c0-2.2,0-5.1.8-7.5C3.6,1.5,5.8,0,9,0c3.2,0,5.4,1.5,6.4,4.4.9,2.4.8,5.3.8,7.4h0c1.4,1.1,2,2.1,1.7,3-.6,1.8-4.4,2.2-6.9,2.3-.4.7-1.2,1.2-2.1,1.2ZM9,.7c-2.9,0-4.8,1.3-5.8,4-.8,2.3-.8,5.1-.8,7.1v.5s-.1.1-.1.1c-1.2.8-1.8,1.6-1.6,2.2.3,1,2.8,1.7,6.4,1.8h.2s0,.2,0,.2c.3.6.9,1,1.6,1s1.3-.4,1.6-1v-.2c0,0,.3,0,.3,0,3.6,0,6.1-.8,6.4-1.8.2-.6-.4-1.3-1.6-2.2h-.2c0-.1,0-.6,0-.6,0-2,0-4.9-.8-7.1-1-2.6-2.8-3.9-5.8-3.9Z"/>
+                )}
+            </g>
+                   </svg>
+            );
+        case 'Calendar': // Calendarボタン
+            return (
+                <svg {...props}>
+                    {/* ここにカレンダーのパスを記述だ！ */}
+                {name === 'Calendar' && (
+                    <g>
+              <path d="M20.9,4.1h-2.6v-.6c0-.4-.3-.7-.7-.7h0c-.4,0-.7.3-.7.7v.6H7.3v-.6c0-.4-.3-.7-.7-.7h0c-.4,0-.7.3-.7.7v.6h-2.6c-.6,0-1,.5-1,1v15.2c0,.6.5,1,1,1h17.8c.6,0,1-.5,1-1V5.1c0-.6-.5-1-1-1ZM5.8,5.2v.3c0,.4.3.7.7.7h0c.4,0,.7-.3.7-.7v-.3h9.5v.3c0,.4.3.7.7.7h0c.4,0,.7-.3.7-.7v-.3h2.6v2.7H3.2v-2.7h2.6ZM3.2,20.2v-11.2h17.6v11.2H3.2Z"/>
+            <path d="M10.6,18.1c-.1,0-.3,0-.4-.1l-3.9-3.6c-.2-.2-.2-.6,0-.8.2-.2.6-.2.8,0l3.5,3.3,6.3-5.7c.2-.2.6-.2.8,0,.2.2.2.6,0,.8l-6.7,6.1c-.1,0-.2.1-.4.1Z"/>
+            </g>
+            )}
+                   </svg>
+            );
+        case 'Zap': // 稲妻ボタン
+            return (
+                <svg {...props}>
+                    {/* ここに稲妻のパスを記述だ！ */}
+                {name === 'Zap' && (
+                    <path d="M6.5,21.6c0,0-.1,0-.2,0-.1,0-.2-.2-.2-.3l4.7-6.9-6.2-4.6c0,0,0-.1,0-.2,0,0,0-.1.2-.2l14.6-6.1c.1,0,.3,0,.4,0,.1,0,.1.2,0,.3l-7.7,6.8,5.7,3c0,0,.1,0,.1.2,0,0,0,.1,0,.2l-11,7.7c0,0-.2,0-.2,0ZM5.5,9.7l6.1,4.5c0,0,.1.1,0,.2l-4.3,6,9.8-6.7-5.7-3c0,0-.1,0-.1-.1,0,0,0-.1,0-.2l6.8-6-12.7,5.3Z"/>
+                    )}
+                   </svg>
+            );
+        // ...他のアイコン（Check）も同様に case を増やす
+        default:
+            return <span style={{ fontSize: size }}>●</span>; // 万が一のための黒丸
+    }
+};
+
+const App = () => {
+    // --- 1. 状態管理 ---
+    const [mustTasks, setMustTasks] = React.useState(() => {
+        const saved = localStorage.getItem('chima_must_tasks');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [wantTasks, setWantTasks] = React.useState(() => {
+        const saved = localStorage.getItem('chima_want_tasks');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [inputValue, setInputValue] = React.useState('');
+    const [deadline, setDeadline] = React.useState('');
+    const [alarmActive, setAlarmActive] = React.useState(false);
+    const [showEstimator, setShowEstimator] = React.useState(false);
+    const [estimateMinutes, setEstimateMinutes] = React.useState(15);
+    const [currentTask, setCurrentTask] = React.useState(null);
+    const [notification, setNotification] = React.useState(null);
+    const [activeTimer, setActiveTimer] = React.useState(null);
+    const [timeLeft, setTimeLeft] = React.useState(0);
+
+    // --- 2. 通知の許可リクエスト ---
+    React.useEffect(() => {
+        if ("Notification" in window) {
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+    }, []);
+
+    // --- 3. データの自動保存 ---
+    React.useEffect(() => {
+        localStorage.setItem('chima_must_tasks', JSON.stringify(mustTasks));
+    }, [mustTasks]);
+
+    React.useEffect(() => {
+        localStorage.setItem('chima_want_tasks', JSON.stringify(wantTasks));
+    }, [wantTasks]);
+
+    // --- 4. タイマー制御 ---
+    React.useEffect(() => {
+        let interval = null;
+        if (activeTimer && timeLeft > 0) {
+            interval = setInterval(() => {
+                setTimeLeft((prev) => prev - 1);
+            }, 1000);
+        } else if (timeLeft === 0 && activeTimer) {
+            setActiveTimer(null);
+            setAlarmActive(true);
+            if (Notification.permission === "granted") {
+                new Notification("ちまタスク：時間だよ！", {
+                    body: `「${activeTimer.text}」の結果はどうだい？`,
+                    tag: "chima-timer"
+                });
+            }
+            showToast("タイムアップ！終わったかな？");
+        }
+        return () => clearInterval(interval);
+    }, [activeTimer, timeLeft]);
+
+    // --- 5. 今日の〆切通知 ---
+    React.useEffect(() => {
+        if (Notification.permission === "granted") {
+            const today = new Date().toISOString().split('T')[0];
+            const todayTasks = mustTasks.filter(t => t.deadline === today);
+            if (todayTasks.length > 0) {
+                new Notification("今日のちま任務", {
+                    body: `今日は「${todayTasks[0].text}」など ${todayTasks.length}件の〆切があるよ！`,
+                    tag: "chima-daily"
+                });
+            }
+        }
+    }, [mustTasks]);
+
+    // --- 6. 各種ハンドラ ---
+    const showToast = (msg) => {
+        setNotification(msg);
+        setTimeout(() => setNotification(null), 3000);
+    };
+
+    const addTask = (type) => {
+        if (!inputValue.trim()) return;
+        const newTask = {
+            id: Date.now(),
+            text: inputValue,
+            type: type,
+            deadline: deadline || null,
+            createdAt: new Date().toLocaleTimeString()
+        };
+        if (type === 'must') { setMustTasks([...mustTasks, newTask]); }
+        else { setWantTasks([...wantTasks, newTask]); }
+        setInputValue('');
+        setDeadline('');
+        showToast(`「${inputValue}」をポイッとしたよ！`);
+    };
+
+    const handleSnooze = () => {
+        setAlarmActive(false);
+        showToast("了解！10分後にまた呼ぶね。");
+    };
+
+    const openEstimator = () => {
+        setAlarmActive(false);
+        setShowEstimator(true);
+    };
+
+    const handleStartTimer = () => {
+        setShowEstimator(false);
+        setTimeLeft(estimateMinutes * 60);
+        setActiveTimer(currentTask);
+        showToast(`${estimateMinutes}分一本勝負！スタート！`);
+    };
+
+    const handleComplete = () => {
+        setAlarmActive(false);
+        setActiveTimer(null);
+        if (currentTask.type === 'must') {
+            setMustTasks(mustTasks.filter(t => t.id !== currentTask.id));
+        } else {
+            setWantTasks(wantTasks.filter(t => t.id !== currentTask.id));
+        }
+        showToast("任務完了！えらい！");
+        setCurrentTask(null);
+    };
+
+    const deleteTask = (id, type) => {
+        if (type === 'must') { setMustTasks(mustTasks.filter(t => t.id !== id)); }
+        else { setWantTasks(wantTasks.filter(t => t.id !== id)); }
+    };
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    const sortedMust = [...mustTasks].sort((a, b) => {
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return new Date(a.deadline) - new Date(b.deadline);
+    });
+ // --- 7. レンダリング ---
+    return (
+        <div className="min-h-screen bg-[#FDFCF8] p-4 md:p-8 font-sans text-slate-700">
+            <div className="max-w-2xl mx-auto">
+                
+                {/* タイマー表示エリア */}
+                {activeTimer && (
+                    <div className="mb-6 bg-amber-400 text-slate-900 p-4 rounded-2xl flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <div className="animate-pulse">
+                                <Icon name="Zap" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-wider font-bold opacity-70">ちまこい任務遂行中</p>
+                                <p className="text-xl font-mono font-bold leading-none">{formatTime(timeLeft)}</p>
+                            </div>
+                        </div>
+                        <button onClick={handleComplete} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold">完了！</button>
+                    </div>
+                )}
+
+                {/* ヘッダー */}
+                <header className="mb-8 text-center">
+                    <h1 className="text-2xl font-black text-slate-900 mb-1 flex items-center justify-center gap-2">
+                        <span className="bg-slate-900 text-white p-1 rounded px-2">ちま</span>タスク
+                    </h1>
+                    <p className="text-xs text-slate-400 font-bold">デッドライン以外は、自由。</p>
+                </header>
+
+                {/* 入力フォーム */}
+                <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-6 mb-10">
+                    <input
+                        type="text"
+                        className="w-full text-lg p-3 border-b-2 border-slate-50 focus:border-amber-300 outline-none transition-colors mb-4 font-bold"
+                        placeholder="ちまこい用事を書く..."
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                    />
+                    
+                    <div className="flex items-center gap-2 mb-6 text-slate-400">
+                        <Icon name="Calendar" size={16} />
+                        <span className="text-xs font-bold">いつまで？ (任意):</span>
+                        <input 
+                            type="date" 
+                            className="text-xs font-bold bg-slate-50 p-1 px-2 rounded-lg outline-none focus:bg-amber-50"
+                            value={deadline}
+                            onChange={(e) => setDeadline(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => addTask('must')}
+                            className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-sm hover:scale-[1.02] transition-transform active:scale-95 shadow-md"
+                        >
+                            やるべき！
+                        </button>
+                        <button
+                            onClick={() => addTask('want')}
+                            className="flex-1 bg-amber-100 text-amber-700 py-4 rounded-2xl font-black text-sm hover:scale-[1.02] transition-transform active:scale-95"
+                        >
+                            やりたい♪
+                        </button>
+                    </div>
+                </div>
+
+                {/* タスク一覧エリア */}
+                <div className="grid md:grid-cols-2 gap-8">
+                    {/* Must Tasks */}
+                    <section>
+                        <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Must Tasks</h2>
+                        <div className="space-y-3">
+                            {sortedMust.map(task => (
+                                <div key={task.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 group">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="font-bold text-slate-800">{task.text}</span>
+                                            {task.deadline && (
+                                                <span className="text-[10px] font-black text-red-400 bg-red-50 self-start px-2 py-0.5 rounded-full">
+                                                    〆 {task.deadline}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <button 
+                                                onClick={() => { setCurrentTask(task); setAlarmActive(true); }} 
+                                                className="w-10 h-10 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 hover:scale-110 transition-transform"
+                                            >
+                                                <Icon name="Play" size={20} />
+                                            </button>
+                                            <button 
+                                                onClick={() => deleteTask(task.id, 'must')} 
+                                                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                                            >
+                                                <Icon name="Trash2" size={20} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Want Tasks */}
+                    <section>
+                        <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Want Tasks</h2>
+                        <div className="space-y-3">
+                            {wantTasks.map(task => (
+                                <div key={task.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 group flex justify-between items-center">
+                                    <span className="font-bold text-slate-600">{task.text}</span>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => { setCurrentTask(task); setAlarmActive(true); }} 
+                                            className="w-10 h-10 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 hover:scale-110 transition-transform"
+                                        >
+                                            <Icon name="Play" size={20} />
+                                        </button>
+                                        <button 
+                                            onClick={() => deleteTask(task.id, 'want')} 
+                                            className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                                        >
+                                            <Icon name="Trash2" size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            {/* モーダル類 */}
+            {alarmActive && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+                    <div className="bg-white w-full max-w-sm rounded-[40px] p-10 text-center shadow-2xl">
+                        <div className="bg-amber-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Icon name="Bell" className="text-amber-600 animate-bounce" size={32} />
+                        </div>
+                        <h3 className="text-slate-400 font-black text-xs uppercase tracking-widest mb-2">ちまこいアラーム</h3>
+                        <p className="text-2xl font-black text-slate-900 mb-10 leading-tight">{currentTask?.text}</p>
+                        <div className="space-y-4">
+                            <button onClick={handleComplete} className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-transform">完了！</button>
+                            <button onClick={openEstimator} className="w-full bg-amber-400 text-slate-900 py-5 rounded-3xl font-black text-lg active:scale-95 transition-transform">今からやる</button>
+                            <button onClick={handleSnooze} className="w-full text-slate-400 py-2 font-bold text-sm hover:text-slate-600">ちょっと待って</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showEstimator && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+                    <div className="bg-white w-full max-w-sm rounded-[40px] p-10 text-center shadow-2xl">
+                        <h3 className="text-slate-900 font-black text-xl mb-8">何分で片付ける？</h3>
+                        <div className="flex items-center justify-center gap-8 mb-10">
+                            <button onClick={() => setEstimateMinutes(Math.max(1, estimateMinutes - 1))} className="text-4xl font-light text-slate-300 hover:text-slate-600 transition-colors">－</button>
+                            <div className="text-6xl font-mono font-black text-slate-900">{estimateMinutes}</div>
+                            <button onClick={() => setEstimateMinutes(estimateMinutes + 1)} className="text-4xl font-light text-slate-300 hover:text-slate-600 transition-colors">＋</button>
+                        </div>
+                        <button onClick={handleStartTimer} className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black text-lg active:scale-95 transition-transform shadow-lg">スタート！</button>
+                    </div>
+                </div>
+            )}
+
+            {/* 通知トースト */}
+            {notification && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full font-bold shadow-2xl animate-fade-in-up z-[60]">
+                    {notification}
+                </div>
+            )}
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes fade-in-up {
+                    from { opacity: 0; transform: translate(-50%, 20px); }
+                    to { opacity: 1; transform: translate(-50%, 0); }
+                }
+                .animate-fade-in-up { animation: fade-in-up 0.3s ease-out; }
+            `}} />
+        </div>
+    );
+};
+
+// あとは描画とサービスワーカーの登録だけ
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+if ('serviceWorker' in navigator) {
+    const swCode = `self.addEventListener('fetch', function(event) {});`;
+    const blob = new Blob([swCode], {type: 'text/javascript'});
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+</script>
+</body>
+</html>
