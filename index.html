@@ -10,7 +10,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#FDFCF8">
-    <link rel="apple-touch-icon" href="https://sakashima11.github.io/ChimaTask/icon.png">
+    <meta name="apple-mobile-web-app-title" content="ちまタスク">
+
+    <link rel="apple-touch-icon" href="./icon.png">
     
     <!-- manifestをインラインで：GitHubでもPWAとして認識させるぜ -->
     <link rel="manifest" href="manifest.json">
@@ -21,6 +23,7 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body class="bg-[#FDFCF8]">
     <div id="root"></div>
@@ -111,7 +114,7 @@ const sendNotification = (title, options) => {
         console.log("通知エラーを回避！スマホでも止まらないぜ");
     }
 };
-        
+
 const App = () => {
     // --- 1. 状態管理 ---
     const [mustTasks, setMustTasks] = React.useState(() => {
@@ -129,7 +132,7 @@ const App = () => {
     const [estimateMinutes, setEstimateMinutes] = React.useState(15);
     const [currentTask, setCurrentTask] = React.useState(null);
     const [notification, setNotification] = React.useState(null);
-    const [activeTimer, setActiveTimer] = useState(() => {
+   const [activeTimer, setActiveTimer] = useState(() => {
         const saved = localStorage.getItem('chima_timer');
         return saved ? JSON.parse(saved).task : null;
     });
@@ -137,12 +140,14 @@ const App = () => {
         const saved = localStorage.getItem('chima_timer');
         if (saved) {
             const { endTime } = JSON.parse(saved);
-            // 未来の終了時刻から今の時刻を引いて、残り秒数を出す
+            // 未来の終了時刻から今の時刻を引いて、残り秒数を出すぜ
             const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
             return remaining;
         }
         return 0;
     });
+    const [isInitialLoad, setIsInitialLoad] = React.useState(true);
+
     // --- 2. 通知の許可リクエスト ---
     React.useEffect(() => {
         if ("Notification" in window) {
@@ -168,23 +173,31 @@ const App = () => {
             interval = setInterval(() => {
                 setTimeLeft((prev) => prev - 1);
             }, 1000);
-        } else if (timeLeft === 0 && activeTimer) {
+       } else if (timeLeft === 0 && activeTimer) {
             // ここで activeTimer の中身を currentTask に避難させる
             setCurrentTask(activeTimer);
             setAlarmActive(true);
             
-            if (Notification.permission === "granted") {
-                sendNotification("ちまタスク：時間だよ！", {
-                    body: `「${activeTimer.text}」の結果はどうだい？`,
-                    tag: "chima-timer"
-                });
+            if (!isInitialLoad) { // ★ここが追加したガード
+                if (Notification.permission === "granted") {
+                    sendNotification("ちまタスク：時間だよ！", {
+                        body: `「${activeTimer.text}」の結果はどうだい？`,
+                        tag: "chima-timer"
+                    });
+                }
+                showToast("タイムアップ！終わったかな？");
             }
-            showToast("タイムアップ！終わったかな？");
-            setActiveTimer(null); // 最後に消す
+            
+            setActiveTimer(null);
+            localStorage.removeItem('chima_timer'); // 物置も空にする
         }
-        return () => clearInterval(interval);
-    }, [activeTimer, timeLeft]);
+    }, [activeTimer, timeLeft, isInitialLoad]); // ★ここに isInitialLoad を追加！
 
+    React.useEffect(() => {
+        // 起動して1秒経ったら「初期起動フラグ」をオフにするぜ
+        const timer = setTimeout(() => setIsInitialLoad(false), 1000);
+        return () => clearTimeout(timer);
+    }, []);
 
     // --- 5. 今日の〆切通知 ---
     React.useEffect(() => {
@@ -232,11 +245,11 @@ const App = () => {
         setShowEstimator(true);
     };
 
-const handleComplete = () => {
+   const handleComplete = () => {
         setAlarmActive(false);
         setActiveTimer(null);
-    localStorage.removeItem('chima_timer');
-        
+        localStorage.removeItem('chima_timer');
+
         // 鉄壁ガード：currentTask が無いなら何もしない
         if (!currentTask) return;
 
@@ -249,7 +262,7 @@ const handleComplete = () => {
         setCurrentTask(null);
     };
 
-    const handleStartTimer = () => {
+   const handleStartTimer = () => {
         if (!currentTask) return;
         setShowEstimator(false);
         
@@ -267,6 +280,7 @@ const handleComplete = () => {
         
         showToast(`${estimateMinutes}分一本勝負！スタート！`);
     };
+
     const deleteTask = (id, type) => {
         if (type === 'must') { setMustTasks(mustTasks.filter(t => t.id !== id)); }
         else { setWantTasks(wantTasks.filter(t => t.id !== id)); }
@@ -288,7 +302,7 @@ const handleComplete = () => {
         <div className="min-h-screen bg-[#FDFCF8] p-4 md:p-8 font-sans text-slate-700">
             <div className="max-w-2xl mx-auto">
                 
-                {/* タイマー表示エリア */}
+               {/* タイマー表示エリア */}
                {activeTimer && (
                <div className="mb-6 bg-amber-400 text-slate-900 p-4 rounded-2xl flex items-center justify-between shadow-lg border-2 border-amber-500">
                <div className="flex items-center gap-3">
@@ -362,7 +376,7 @@ const handleComplete = () => {
                                 <div key={task.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 group">
                                     <div className="flex justify-between items-start">
                                         <div className="flex flex-col gap-1">
-                                            <span className="font-bold text-slate-600">{task.text}</span>
+                                            <span className="font-bold text-slate-800">{task.text}</span>
                                             {task.deadline && (
                                                 <span className="text-[10px] font-black text-red-400 bg-red-50 self-start px-2 py-0.5 rounded-full">
                                                     〆 {task.deadline}
@@ -370,16 +384,16 @@ const handleComplete = () => {
                                             )}
                                         </div>
                                         <div className="flex gap-1">
-                                           <button 
+                                            <button 
                                              onClick={() => { setCurrentTask(task); setAlarmActive(true); }} 
-                                                disabled={activeTimer !== null} // ★タイマー稼働中は無効化！
+                                             disabled={activeTimer !== null} // ★タイマー稼働中は無効化！
                                              className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
                                              activeTimer !== null 
                                              ? 'bg-slate-100 text-slate-300 cursor-not-allowed' // 無効時の色
                                              : 'bg-amber-100 text-amber-600 hover:scale-110 active:scale-95' // 有効時の色
-                                               }`}
-                                                >
-                                            <Icon name="Play" size={20} />
+                                             }`}
+                                            >
+                                             <Icon name="Play" size={20} />
                                             </button>
                                             <button 
                                                 onClick={() => deleteTask(task.id, 'must')} 
@@ -402,17 +416,17 @@ const handleComplete = () => {
                                 <div key={task.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 group flex justify-between items-center">
                                     <span className="font-bold text-slate-600">{task.text}</span>
                                     <div className="flex gap-2">
-                                       <button 
-                                             onClick={() => { setCurrentTask(task); setAlarmActive(true); }} 
-                                                disabled={activeTimer !== null} // ★タイマー稼働中は無効化！
-                                             className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
-                                             activeTimer !== null 
-                                             ? 'bg-slate-100 text-slate-300 cursor-not-allowed' // 無効時の色
-                                             : 'bg-amber-100 text-amber-600 hover:scale-110 active:scale-95' // 有効時の色
-                                               }`}
-                                                >
+                                        <button 
+                                            onClick={() => { setCurrentTask(task); setAlarmActive(true); }} 
+                                            disabled={activeTimer !== null}
+                                            className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
+                                                activeTimer !== null 
+                                                ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                                : 'bg-amber-100 text-amber-600 hover:scale-110 active:scale-95'
+                                            }`}
+                                        >
                                             <Icon name="Play" size={20} />
-                                            </button>
+                                        </button>
                                         <button 
                                             onClick={() => deleteTask(task.id, 'want')} 
                                             className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
@@ -483,7 +497,6 @@ const handleComplete = () => {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 
-// --- サービスワーカーの登録（iPhone/Android両対応版） ---
 if ('serviceWorker' in navigator) {
     const swContent = `
         const CACHE_NAME = 'chima-task-v1';
@@ -498,9 +511,7 @@ if ('serviceWorker' in navigator) {
     const swUrl = URL.createObjectURL(blob);
     
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register(swUrl)
-            .then(() => console.log('ちまタスク、準備完了！'))
-            .catch((err) => console.log('SW登録失敗...', err));
+        navigator.serviceWorker.register(swUrl).catch(() => {});
     });
 }
 </script>
