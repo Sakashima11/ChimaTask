@@ -256,20 +256,23 @@ const App = () => {
             <div className="max-w-2xl mx-auto">
                 
                 {/* タイマー表示エリア */}
-                {activeTimer && (
-                    <div className="mb-6 bg-amber-400 text-slate-900 p-4 rounded-2xl flex items-center justify-between shadow-lg">
-                        <div className="flex items-center gap-3">
-                            <div className="animate-pulse">
-                                <Icon name="Zap" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] uppercase tracking-wider font-bold opacity-70">ちまこい任務遂行中</p>
-                                <p className="text-xl font-mono font-bold leading-none">{formatTime(timeLeft)}</p>
-                            </div>
-                        </div>
-                        <button onClick={handleComplete} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold">完了！</button>
-                    </div>
-                )}
+               {activeTimer && (
+               <div className="mb-6 bg-amber-400 text-slate-900 p-4 rounded-2xl flex items-center justify-between shadow-lg border-2 border-amber-500">
+               <div className="flex items-center gap-3">
+               <div className="animate-pulse">
+                <Icon name="Zap" />
+                </div>
+                <div>
+                {/* ここにタスク名を表示！ */}
+                <p className="text-[10px] uppercase tracking-wider font-bold opacity-70">
+                    ちまっと遂行中：{activeTimer.text}
+                </p>
+                <p className="text-xl font-mono font-bold leading-none">{formatTime(timeLeft)}</p>
+                </div>
+                </div>
+              <button onClick={handleComplete} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform">完了！</button>
+              </div>
+                 )}
 
                 {/* ヘッダー */}
                 <header className="mb-8 text-center">
