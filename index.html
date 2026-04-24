@@ -138,7 +138,7 @@ const App = () => {
         localStorage.setItem('chima_want_tasks', JSON.stringify(wantTasks));
     }, [wantTasks]);
 
-    // --- 4. タイマー制御 ---
+// --- 4. タイマー制御 ---
     React.useEffect(() => {
         let interval = null;
         if (activeTimer && timeLeft > 0) {
@@ -146,13 +146,9 @@ const App = () => {
                 setTimeLeft((prev) => prev - 1);
             }, 1000);
         } else if (timeLeft === 0 && activeTimer) {
-            // setActiveTimer(null); // ←一旦これをコメントアウトか削除！
-            
+            // ここで activeTimer の中身を currentTask に避難させる
+            setCurrentTask(activeTimer);
             setAlarmActive(true);
-            
-            // アラームを出した後にタイマーを終了させる
-            // もし「上の黄色いバー」をすぐ消したいなら、
-            // activeTimer ではなく timeLeft > 0 をバーの表示条件にするといいぜ！
             
             if (Notification.permission === "granted") {
                 new Notification("ちまタスク：時間だよ！", {
@@ -161,9 +157,7 @@ const App = () => {
                 });
             }
             showToast("タイムアップ！終わったかな？");
-            
-            // 最後にタイマー状態をリセット
-            setActiveTimer(null); 
+            setActiveTimer(null); // 最後に消す
         }
         return () => clearInterval(interval);
     }, [activeTimer, timeLeft]);
@@ -215,23 +209,28 @@ const App = () => {
         setShowEstimator(true);
     };
 
-    const handleStartTimer = () => {
-        setShowEstimator(false);
-        setTimeLeft(estimateMinutes * 60);
-        setActiveTimer(currentTask);
-        showToast(`${estimateMinutes}分一本勝負！スタート！`);
-    };
-
-    const handleComplete = () => {
+const handleComplete = () => {
         setAlarmActive(false);
         setActiveTimer(null);
+        
+        // 鉄壁ガード：currentTask が無いなら何もしない
+        if (!currentTask) return;
+
         if (currentTask.type === 'must') {
-            setMustTasks(mustTasks.filter(t => t.id !== currentTask.id));
+            setMustTasks(prev => prev.filter(t => t.id !== currentTask.id));
         } else {
-            setWantTasks(wantTasks.filter(t => t.id !== currentTask.id));
+            setWantTasks(prev => prev.filter(t => t.id !== currentTask.id));
         }
         showToast("任務完了！えらい！");
         setCurrentTask(null);
+    };
+
+    const handleStartTimer = () => {
+        if (!currentTask) return; // ガード
+        setShowEstimator(false);
+        setTimeLeft(estimateMinutes * 60);
+        setActiveTimer(currentTask); // ここで activeTimer にコピー
+        showToast(`${estimateMinutes}分一本勝負！スタート！`);
     };
 
     const deleteTask = (id, type) => {
@@ -392,7 +391,9 @@ const App = () => {
                             <Icon name="Bell" className="text-amber-600 animate-bounce" size={32} />
                         </div>
                         <h3 className="text-slate-400 font-black text-xs uppercase tracking-widest mb-2">ちまこいアラーム</h3>
-                        <p className="text-2xl font-black text-slate-900 mb-10 leading-tight">{currentTask?.text}</p>
+                        <p className="text-2xl font-black text-slate-900 mb-10 leading-tight">
+                        {currentTask ? currentTask.text : "任務完了！"}
+                        </p>
                         <div className="space-y-4">
                             <button onClick={handleComplete} className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-transform">完了！</button>
                             <button onClick={openEstimator} className="w-full bg-amber-400 text-slate-900 py-5 rounded-3xl font-black text-lg active:scale-95 transition-transform">今からやる</button>
