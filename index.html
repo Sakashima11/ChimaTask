@@ -100,6 +100,18 @@ const Icon = ({ name, size = 20, className = "" }) => {
     }
 };
 
+// --- Appの外（Iconコンポーネントの下あたり）に置く ---
+const sendNotification = (title, options) => {
+    // 窓口チェック：通知機能がない、または許可されてないなら即終了
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    
+    try {
+        new Notification(title, options);
+    } catch (e) {
+        console.log("通知エラーを回避！スマホでも止まらないぜ");
+    }
+};
+        
 const App = () => {
     // --- 1. 状態管理 ---
     const [mustTasks, setMustTasks] = React.useState(() => {
@@ -151,7 +163,7 @@ const App = () => {
             setAlarmActive(true);
             
             if (Notification.permission === "granted") {
-                new Notification("ちまタスク：時間だよ！", {
+                sendNotification("ちまタスク：時間だよ！", {
                     body: `「${activeTimer.text}」の結果はどうだい？`,
                     tag: "chima-timer"
                 });
