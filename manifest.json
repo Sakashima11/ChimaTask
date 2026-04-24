@@ -1,23 +1,23 @@
 {
   "name": "ちまタスク",
   "short_name": "ちまタスク",
-  "start_url": ".",
+  "start_url": "/ChimaTask/",
   "display": "standalone",
   "background_color": "#FDFCF8",
   "theme_color": "#FDFCF8",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "./icon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "512icon.png",
+      "src": "./512icon.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "512icon.png",
+      "src": "./512icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
