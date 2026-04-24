@@ -10,6 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#FDFCF8">
+    <link rel="apple-touch-icon" href="https://sakashima11.github.io/ChimaTask/icon.png">
     
     <!-- manifestをインラインで：GitHubでもPWAとして認識させるぜ -->
     <link rel="manifest" href="manifest.json">
@@ -482,11 +483,25 @@ const handleComplete = () => {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 
+// --- サービスワーカーの登録（iPhone/Android両対応版） ---
 if ('serviceWorker' in navigator) {
-    const swCode = `self.addEventListener('fetch', function(event) {});`;
-    const blob = new Blob([swCode], {type: 'text/javascript'});
+    const swContent = `
+        const CACHE_NAME = 'chima-task-v1';
+        self.addEventListener('install', (e) => {
+            e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(['./'])));
+        });
+        self.addEventListener('fetch', (e) => {
+            e.respondWith(caches.match(e.request).then((response) => response || fetch(e.request)));
+        });
+    `;
+    const blob = new Blob([swContent], { type: 'text/javascript' });
     const swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl).catch(() => {});
+    
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register(swUrl)
+            .then(() => console.log('ちまタスク、準備完了！'))
+            .catch((err) => console.log('SW登録失敗...', err));
+    });
 }
 </script>
 </body>
