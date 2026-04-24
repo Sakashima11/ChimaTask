@@ -146,8 +146,14 @@ const App = () => {
                 setTimeLeft((prev) => prev - 1);
             }, 1000);
         } else if (timeLeft === 0 && activeTimer) {
-            setActiveTimer(null);
+            // setActiveTimer(null); // ←一旦これをコメントアウトか削除！
+            
             setAlarmActive(true);
+            
+            // アラームを出した後にタイマーを終了させる
+            // もし「上の黄色いバー」をすぐ消したいなら、
+            // activeTimer ではなく timeLeft > 0 をバーの表示条件にするといいぜ！
+            
             if (Notification.permission === "granted") {
                 new Notification("ちまタスク：時間だよ！", {
                     body: `「${activeTimer.text}」の結果はどうだい？`,
@@ -155,9 +161,13 @@ const App = () => {
                 });
             }
             showToast("タイムアップ！終わったかな？");
+            
+            // 最後にタイマー状態をリセット
+            setActiveTimer(null); 
         }
         return () => clearInterval(interval);
     }, [activeTimer, timeLeft]);
+
 
     // --- 5. 今日の〆切通知 ---
     React.useEffect(() => {
