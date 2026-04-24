@@ -129,9 +129,20 @@ const App = () => {
     const [estimateMinutes, setEstimateMinutes] = React.useState(15);
     const [currentTask, setCurrentTask] = React.useState(null);
     const [notification, setNotification] = React.useState(null);
-    const [activeTimer, setActiveTimer] = React.useState(null);
-    const [timeLeft, setTimeLeft] = React.useState(0);
-
+    const [activeTimer, setActiveTimer] = useState(() => {
+        const saved = localStorage.getItem('chima_timer');
+        return saved ? JSON.parse(saved).task : null;
+    });
+    const [timeLeft, setTimeLeft] = useState(() => {
+        const saved = localStorage.getItem('chima_timer');
+        if (saved) {
+            const { endTime } = JSON.parse(saved);
+            // 未来の終了時刻から今の時刻を引いて、残り秒数を出す
+            const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+            return remaining;
+        }
+        return 0;
+    });
     // --- 2. 通知の許可リクエスト ---
     React.useEffect(() => {
         if ("Notification" in window) {
@@ -224,6 +235,7 @@ const App = () => {
 const handleComplete = () => {
         setAlarmActive(false);
         setActiveTimer(null);
+    localStorage.removeItem('chima_timer');
         
         // 鉄壁ガード：currentTask が無いなら何もしない
         if (!currentTask) return;
@@ -238,13 +250,23 @@ const handleComplete = () => {
     };
 
     const handleStartTimer = () => {
-        if (!currentTask) return; // ガード
+        if (!currentTask) return;
         setShowEstimator(false);
-        setTimeLeft(estimateMinutes * 60);
-        setActiveTimer(currentTask); // ここで activeTimer にコピー
+        
+        const seconds = estimateMinutes * 60;
+        const endTime = Date.now() + seconds * 1000; // 「今から○秒後」を計算
+        
+        setTimeLeft(seconds);
+        setActiveTimer(currentTask);
+        
+        // 物置に保存！これでリロードしても大丈夫だ
+        localStorage.setItem('chima_timer', JSON.stringify({
+            task: currentTask,
+            endTime: endTime
+        }));
+        
         showToast(`${estimateMinutes}分一本勝負！スタート！`);
     };
-
     const deleteTask = (id, type) => {
         if (type === 'must') { setMustTasks(mustTasks.filter(t => t.id !== id)); }
         else { setWantTasks(wantTasks.filter(t => t.id !== id)); }
@@ -348,11 +370,16 @@ const handleComplete = () => {
                                             )}
                                         </div>
                                         <div className="flex gap-1">
-                                            <button 
-                                                onClick={() => { setCurrentTask(task); setAlarmActive(true); }} 
-                                                className="w-10 h-10 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 hover:scale-110 transition-transform"
-                                            >
-                                                <Icon name="Play" size={20} />
+                                           <button 
+                                             onClick={() => { setCurrentTask(task); setAlarmActive(true); }} 
+                                                disabled={activeTimer !== null} // ★タイマー稼働中は無効化！
+                                             className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
+                                             activeTimer !== null 
+                                             ? 'bg-slate-100 text-slate-300 cursor-not-allowed' // 無効時の色
+                                             : 'bg-amber-100 text-amber-600 hover:scale-110 active:scale-95' // 有効時の色
+                                               }`}
+                                                >
+                                            <Icon name="Play" size={20} />
                                             </button>
                                             <button 
                                                 onClick={() => deleteTask(task.id, 'must')} 
@@ -375,12 +402,17 @@ const handleComplete = () => {
                                 <div key={task.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 group flex justify-between items-center">
                                     <span className="font-bold text-slate-600">{task.text}</span>
                                     <div className="flex gap-2">
-                                        <button 
-                                            onClick={() => { setCurrentTask(task); setAlarmActive(true); }} 
-                                            className="w-10 h-10 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 hover:scale-110 transition-transform"
-                                        >
+                                       <button 
+                                             onClick={() => { setCurrentTask(task); setAlarmActive(true); }} 
+                                                disabled={activeTimer !== null} // ★タイマー稼働中は無効化！
+                                             className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
+                                             activeTimer !== null 
+                                             ? 'bg-slate-100 text-slate-300 cursor-not-allowed' // 無効時の色
+                                             : 'bg-amber-100 text-amber-600 hover:scale-110 active:scale-95' // 有効時の色
+                                               }`}
+                                                >
                                             <Icon name="Play" size={20} />
-                                        </button>
+                                            </button>
                                         <button 
                                             onClick={() => deleteTask(task.id, 'want')} 
                                             className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
